@@ -43,12 +43,18 @@ cv.circle(binary_img, (int(coin[0]), int(coin[1])), int(coin[2]) + 5, 255, -1) #
 kernel = np.ones((5, 5), dtype=np.uint8)
 smoothed_binary_img = cv.erode(cv.dilate(binary_img, kernel), kernel) 
 
+# save out as png with only the fabric
+white_space = np.full((smoothed_binary_img.shape[0], smoothed_binary_img.shape[1], 3), 255, dtype=np.uint8)
+fabric_cutout_im = cv.merge((white_space, smoothed_binary_img)) # passing in the binary mask as alpha value
+cv.imwrite("images/example_fabric_cutout.png", fabric_cutout_im)
+
 # detect edges
 contours, _ = cv.findContours(smoothed_binary_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
 
 # cv.imshow("binary", binary_img)
 # cv.waitKey(0)
 # print(contours)
 # cv.drawContours(raw_img, contours, -1, (0,255,0), 3)
-# cv.imshow("circles", raw_img)
+# cv.imshow("circles", fabric_cutout_im)
 # cv.waitKey(0)
