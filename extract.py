@@ -16,10 +16,39 @@
 '''
 
 import cv2 as cv
+import numpy as np
 
 DIR="images/"
 FILE="example.png"
+COIN_DIAMETER = 21.21 # currently, nickel diameter
 
 raw_img = cv.imread(f'{DIR}{FILE}')
 grey_img = cv.cvtColor(raw_img, cv.COLOR_BGR2GRAY)
-val, threshed_im = cv.threshold(grey_img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+
+# obtain pixel to millimeter ratio based on size of coin.
+blurred_grey_img = cv.GaussianBlur(grey_img, (7, 7), 0) # blur to normalize coin color a bit
+circles = cv.HoughCircles(blurred_grey_img, cv.HOUGH_GRADIENT, minDist=50,
+                        dp=1.0, param1=100, param2=30,
+                        minRadius=10, maxRadius=50)
+coin = circles[0][0]
+coin_radius_px = coin[2]
+pix_to_mm = COIN_DIAMETER / (2 * coin_radius_px)
+
+# otsu binary thresholding to isolate fabric from background.
+# TODO: assumes background darker than fabric
+thresh_val, binary_img = cv.threshold(grey_img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+cv.circle(binary_img, (int(coin[0]), int(coin[1])), int(coin[2]) + 5, 255, -1) # mask coin
+
+# remove pepper from image (likely due to the coin)
+kernel = np.ones((5, 5), dtype=np.uint8)
+smoothed_binary_img = cv.erode(cv.dilate(binary_img, kernel), kernel) 
+
+# detect edges
+contours, _ = cv.findContours(smoothed_binary_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+
+# cv.imshow("binary", binary_img)
+# cv.waitKey(0)
+# print(contours)
+# cv.drawContours(raw_img, contours, -1, (0,255,0), 3)
+# cv.imshow("circles", raw_img)
+# cv.waitKey(0)
