@@ -15,3 +15,11 @@
     points on cutout. (bounding box, basically.)
 '''
 
+import cv2 as cv
+
+DIR="images/"
+FILE="example.png"
+
+raw_img = cv.imread(f'{DIR}{FILE}')
+grey_img = cv.cvtColor(raw_img, cv.COLOR_BGR2GRAY)
+val, threshed_im = cv.threshold(grey_img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
