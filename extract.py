@@ -3,10 +3,13 @@ import numpy as np
 import csv
 
 DIR="images/"
-FILE="example.png"
+SRC_FILE="example.png"
+CSV_FILE="example_dims.csv"
+PNG_CUTOUT="example_fabric_cutout.png"
+PNG_BOXES="example_boxes_cutout.png"
 COIN_DIAMETER = 21.21 # currently, nickel diameter
 
-raw_img = cv.imread(f'{DIR}{FILE}')
+raw_img = cv.imread(f'{DIR}{SRC_FILE}')
 grey_img = cv.cvtColor(raw_img, cv.COLOR_BGR2GRAY)
 
 def save_to_png(fname, mask):
@@ -38,7 +41,7 @@ kernel = np.ones((5, 5), dtype=np.uint8)
 smoothed_binary_img = cv.erode(cv.dilate(binary_img, kernel), kernel) 
 
 # save out as png with only the fabric
-save_to_png(f"{DIR}/example_fabric_cutout.png", smoothed_binary_img)
+save_to_png(f"{DIR}/{PNG_CUTOUT}", smoothed_binary_img)
 
 # figure out the fabric boundaries: assume it's the largest white space in the binary image
 contours, hierarchy = cv.findContours(smoothed_binary_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -54,7 +57,7 @@ for cutout in cutout_contours:
     cutout_bounding_boxes.append([box_pts[0], box_pts[1], box_pts[2], box_pts[3]])
     cv.drawContours(cutout_boxes_removed_img, [box_pts], 0, 0, thickness=-1)
 
-save_to_png(f"{DIR}/example_boxes_cutout.png", cutout_boxes_removed_img)
+save_to_png(f"{DIR}/{PNG_BOXES}", cutout_boxes_removed_img)
 
 # compute measurement information for the fabric
 fabric_rect = cv.minAreaRect(contours[fabric_index])
@@ -66,9 +69,9 @@ usable_fabric_px = np.count_nonzero(cutout_boxes_removed_img == 255)
 usable_fabric_area = usable_fabric_px * (pix_to_mm ** 2)
 
 # save measurement information out to a csv! all measurements in mm / mm^2 or degrees
-with open("images/example_dims.csv", "w", newline='') as csvfile:
+with open(f"{DIR}/{PNG_BOXES}", "w", newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(["fabric_width", "fabric_height", "fabric_rotation_angle", "remaining_area, usable_area"])
+    writer.writerow(["fabric_width", "fabric_height", "fabric_rotation_angle", "remaining_area", "usable_area"])
     writer.writerow([fwidth, fheight, fangle, total_fabric_area, usable_fabric_area])
     writer.writerow([])
 
