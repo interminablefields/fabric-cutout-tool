@@ -1,4 +1,4 @@
-fabric_width,fabric_height,fabric_rotation_angle,"remaining_area, usable_area"
+fabric_width,fabric_height,fabric_rotation_angle,remaining_area,usable_area
 289.2843,275.16522,90.0,52285.516,36884.887
 
 cutout_index,centerpt_x,centerpt_y,width,height,rotation_angle

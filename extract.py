@@ -69,7 +69,7 @@ usable_fabric_px = np.count_nonzero(cutout_boxes_removed_img == 255)
 usable_fabric_area = usable_fabric_px * (pix_to_mm ** 2)
 
 # save measurement information out to a csv! all measurements in mm / mm^2 or degrees
-with open(f"{DIR}/{PNG_BOXES}", "w", newline='') as csvfile:
+with open(f"{DIR}/{CSV_FILE}", "w", newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(["fabric_width", "fabric_height", "fabric_rotation_angle", "remaining_area", "usable_area"])
     writer.writerow([fwidth, fheight, fangle, total_fabric_area, usable_fabric_area])
