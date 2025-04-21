@@ -25,6 +25,11 @@ COIN_DIAMETER = 21.21 # currently, nickel diameter
 raw_img = cv.imread(f'{DIR}{FILE}')
 grey_img = cv.cvtColor(raw_img, cv.COLOR_BGR2GRAY)
 
+def save_to_png(fname, mask):
+    white_space = np.full((mask.shape[0], mask.shape[1], 3), 255, dtype=np.uint8)
+    fabric_cutout_im = cv.merge((white_space, mask)) # passing in the binary mask as alpha value
+    cv.imwrite(fname, fabric_cutout_im)
+
 # obtain pixel to millimeter ratio based on size of coin.
 blurred_grey_img = cv.GaussianBlur(grey_img, (7, 7), 0) # blur to normalize coin color a bit
 circles = cv.HoughCircles(blurred_grey_img, cv.HOUGH_GRADIENT, minDist=50,
@@ -49,21 +54,25 @@ kernel = np.ones((5, 5), dtype=np.uint8)
 smoothed_binary_img = cv.erode(cv.dilate(binary_img, kernel), kernel) 
 
 # save out as png with only the fabric
-white_space = np.full((smoothed_binary_img.shape[0], smoothed_binary_img.shape[1], 3), 255, dtype=np.uint8)
-fabric_cutout_im = cv.merge((white_space, smoothed_binary_img)) # passing in the binary mask as alpha value
-cv.imwrite("images/example_fabric_cutout.png", fabric_cutout_im)
+save_to_png(f"{DIR}/example_fabric_cutout.png", smoothed_binary_img)
 
 # figure out the fabric boundaries: assume it's the largest white space in the binary image
 contours, hierarchy = cv.findContours(smoothed_binary_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 areas = [cv.contourArea(c) for c in contours]
 fabric_index = np.argmax(areas)
 
-# get the minimum-area rectangle for each cutout within the fabric.
-cutout_contours = [ contours[i] for i, h in enumerate(hierarchy) if h[3] == fabric_index ]
+# get the minimum-area rectangle for each cutout within the fabric and fill it in as black (unavailable).
+cutout_boxes_removed_img = smoothed_binary_img.copy()
+cutout_contours = [ contours[i] for i, h in enumerate(hierarchy[0]) if h[3] == fabric_index ]
 cutout_bounding_boxes = []
 for cutout in cutout_contours:
-    v1, v2, v3, v4 = cv.boxPoints(cv.minAreaRect(cutout))
-    cutout_bounding_boxes.append([v1, v2, v3, v4])
+    box_pts = np.round(cv.boxPoints(cv.minAreaRect(cutout))).astype(np.int32)
+    cutout_bounding_boxes.append([box_pts[0], box_pts[1], box_pts[2], box_pts[3]])
+    cv.drawContours(cutout_boxes_removed_img, [box_pts], 0, 0, thickness=-1)
+
+save_to_png(f"{DIR}/example_boxes_cutout.png", cutout_boxes_removed_img)
+
+
 
 
 
