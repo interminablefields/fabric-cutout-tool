@@ -15,7 +15,7 @@ sample source and result files are available in the `images/` folder.
 2. take a bird's-eye picture of the fabric with the coin clearly visible. AI-generated example provided.
 3. edit the constants at the top of the file with the desired source and destination file locations.
 4. if not already installed, install `opencv-python`
-5. run python3 extract.py
+5. run `python3 extract.py`
 
 ------
 1. the minimum area rectangle represents the smallest possible rotated rectangle that fully encloses a given shape.
