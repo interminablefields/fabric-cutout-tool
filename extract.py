@@ -35,8 +35,13 @@ coin_radius_px = coin[2]
 pix_to_mm = COIN_DIAMETER / (2 * coin_radius_px)
 
 # otsu binary thresholding to isolate fabric from background.
-# TODO: assumes background darker than fabric
 thresh_val, binary_img = cv.threshold(grey_img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+# heuristic: assume the largest region in the image is the fabric
+white_count = np.count_nonzero(binary_img == 255)
+black_count = np.count_nonzero(binary_img == 0)
+if ( black_count > white_count ):
+    binary_img = cv.bitwise_not(binary_img)
+
 cv.circle(binary_img, (int(coin[0]), int(coin[1])), int(coin[2]) + 5, 255, -1) # mask coin
 
 # remove pepper from image (likely due to the coin)
@@ -48,8 +53,18 @@ white_space = np.full((smoothed_binary_img.shape[0], smoothed_binary_img.shape[1
 fabric_cutout_im = cv.merge((white_space, smoothed_binary_img)) # passing in the binary mask as alpha value
 cv.imwrite("images/example_fabric_cutout.png", fabric_cutout_im)
 
-# detect edges
-contours, _ = cv.findContours(smoothed_binary_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+# figure out the fabric boundaries: assume it's the largest white space in the binary image
+contours, hierarchy = cv.findContours(smoothed_binary_img, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+areas = [cv.contourArea(c) for c in contours]
+fabric_index = np.argmax(areas)
+
+# get the minimum-area rectangle for each cutout within the fabric.
+cutout_contours = [ contours[i] for i, h in enumerate(hierarchy) if h[3] == fabric_index ]
+cutout_bounding_boxes = []
+for cutout in cutout_contours:
+    v1, v2, v3, v4 = cv.boxPoints(cv.minAreaRect(cutout))
+    cutout_bounding_boxes.append([v1, v2, v3, v4])
+
 
 
 # cv.imshow("binary", binary_img)
