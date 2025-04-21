@@ -1,22 +1,6 @@
-'''
-1. color segmentation: separate the fabric from background
-    color threshold for just the white fabric
-    find the outer edges... how? -- > turns out there's a contour flag for this!
-    or look for lines that are not contained by any combination of the other lines
-    using canny, but that assumes rectangle fabric.
-2. color segmentation: separate the cutout from the fabric
-    easy, just thresholding. get a binary mask of the fabric.
-4. scale using nickel for reference.
-    i guess combined color and circle detection? can do basic color thresholding for now
-5. determine the remaining area of the fabric. with scale this should be somewhat
-    straightforward i think? can use a pixels-to-inches sort of thing
-5. use some sort of packing algorithm on the leftover fabric? or even just
-    cleave out the vertical strip with the cutout, like based on leftmost/rightmost
-    points on cutout. (bounding box, basically.)
-'''
-
 import cv2 as cv
 import numpy as np
+import csv
 
 DIR="images/"
 FILE="example.png"
@@ -72,13 +56,25 @@ for cutout in cutout_contours:
 
 save_to_png(f"{DIR}/example_boxes_cutout.png", cutout_boxes_removed_img)
 
+# compute measurement information for the fabric
+fabric_rect = cv.minAreaRect(contours[fabric_index])
+(fx, fy), (fw, fh), fangle = fabric_rect
+fwidth, fheight = fw * pix_to_mm, fh * pix_to_mm
+total_fabric_px = np.count_nonzero(smoothed_binary_img == 255)
+total_fabric_area = total_fabric_px * (pix_to_mm ** 2)
+usable_fabric_px = np.count_nonzero(cutout_boxes_removed_img == 255)
+usable_fabric_area = usable_fabric_px * (pix_to_mm ** 2)
 
+# save measurement information out to a csv! all measurements in mm / mm^2 or degrees
+with open("images/example_dims.csv", "w", newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(["fabric_width", "fabric_height", "fabric_rotation_angle", "remaining_area, usable_area"])
+    writer.writerow([fwidth, fheight, fangle, total_fabric_area, usable_fabric_area])
+    writer.writerow([])
 
-
-
-# cv.imshow("binary", binary_img)
-# cv.waitKey(0)
-# print(contours)
-# cv.drawContours(raw_img, contours, -1, (0,255,0), 3)
-# cv.imshow("circles", fabric_cutout_im)
-# cv.waitKey(0)
+    writer.writerow(["cutout_index", "centerpt_x", "centerpt_y", "width", "height", "rotation_angle"])
+    for i, cutout in enumerate(cutout_contours):
+        (cx, cy), (w, h), angle = cv.minAreaRect(cutout)
+        center_x, center_y = cx * pix_to_mm, cy * pix_to_mm
+        width, height = w * pix_to_mm, h * pix_to_mm
+        writer.writerow([i, center_x, center_y, width, height, angle])
